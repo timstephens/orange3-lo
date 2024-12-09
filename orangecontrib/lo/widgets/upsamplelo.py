@@ -59,8 +59,8 @@ class UpsampleLO(OWWidget):
             self.originals = data # Passing through the unmolested data
             # extract the sampling_coordinates from the metadata on self.data
             sampling_coordinates = data.metas #since that's the coordinates in the LO data, unless we go and mess that up somewhere else. 
-            upsample_dimension = 640 # int(self.upsample_dimension)
-            sampling_scale = 0.333 #upsample_dimension/1920
+            upsample_dimension = int(self.upsample_dimension)
+            sampling_scale = upsample_dimension/1920
             print(f"Upsample to {upsample_dimension}, using scale {sampling_scale}")
 
             upsampler = NearestUpSample(
@@ -76,13 +76,18 @@ class UpsampleLO(OWWidget):
             domain = data.domain 
             
             # Need to reshape the x,y,λ data into (loc, λ) where loc is the sampled coords
-            # Do the sample coordinates first 
-            x,y = np.meshgrid(np.arange(upsampled_cube.shape[0]),np.arange(upsampled_cube.shape[1]))
+            # Do the sample coordinates first. Need to use 'ij' indexing style since
+            # meshgrid makes an NxM matrix from np.meshgrid(M,N) because python. 
+            # If you allow the default (xy indexing), any mismatch in array dimensions (i.e. if it's non-square) 
+            # causes the output to be all skewed.
+            x,y = np.meshgrid(np.arange(upsampled_cube.shape[0]),np.arange(upsampled_cube.shape[1]), indexing='ij')
             x = x.reshape(-1)
+            # x = x / np.max(x)
             y = y.reshape(-1)
+            # y = y / np.max(y)
             #Need to get x,y into the right format, which is stuck together and then transposed
             coordinates = np.array([x,y]).T 
-            print(f"coordinate array shape {np.array([x,y]).T .shape}")
+            print(f"coordinate array shape {coordinates.shape}")
             #Then do the cube
             reshaped_cube = upsampled_cube.reshape(-1,upsampled_cube.shape[2])
             self.data = Table.from_numpy(domain, reshaped_cube, metas=coordinates)  

@@ -1,0 +1,5 @@
+[orange.widgets]
+LivingOptics = orangecontrib.lo.widgets
+
+[orange3.addon]
+Orange3-LivingOptics = orangecontrib.lo

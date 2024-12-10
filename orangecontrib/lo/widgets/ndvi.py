@@ -39,7 +39,47 @@ class NDVI(OWWidget):
     def __init__(self):
         super().__init__()
         self.data = None
-        
+        self.band1_start = gui.lineEdit(
+            self.controlArea, 
+            self, 
+            "band1_start", 
+            label="Band 1 start wavelength", 
+            callback=self.commit
+        )
+
+        self.band1_end = gui.lineEdit(
+            self.controlArea, 
+            self, 
+            "band1_end", 
+            label="Band 1 end wavelength", 
+            callback=self.commit
+        )
+
+        self.band2_start = gui.lineEdit(
+            self.controlArea, 
+            self, 
+            "band2_start", 
+            label="Band 2 start wavelength", 
+            callback=self.commit
+        )
+
+        self.band2_end = gui.lineEdit(
+            self.controlArea, 
+            self, 
+            "band2_end", 
+            label="Band 2 end wavelength", 
+            callback=self.commit
+        )
+
+        self.reset_limits_button = gui.button(
+            self.controlArea, 
+            self, 
+            label="Reset Band Limits", 
+            callback=self.reset_limits
+        )
+
+        self.reset_limits() #Run this to set the values to their defaults when the widget is instantiated.
+
         # self.label_box = gui.comboBox(
         #     self.controlArea, 
         #     self, 
@@ -57,9 +97,18 @@ class NDVI(OWWidget):
 
             # extract the sampling_coordinates from the metadata on self.data
             sampling_coordinates = data.metas #since that's the coordinates in the LO data, unless we go and mess that up somewhere else. 
+            band1_start = int(self.band1_start)
+            band1_end = int(self.band1_end)
+            band2_start = int(self.band2_start)
+            band2_end = int(self.band2_end)
 
             wavelengths = np.array([float(var.name) for var in data.domain.variables])
-            ndvi_list_a = calculate_NDVI(data.X, wavelengths, (650,850), (785,900))
+            ndvi_list_a= calculate_NDVI(
+                data.X, 
+                wavelengths, 
+                (band1_start, band1_end), 
+                (band2_start, band2_end)
+            )
             ndvi_list = np.array([ndvi_list_a, ndvi_list_a]) #Hack to make the data 2D
             # Convert the domain from one containing spectra to one containing a single number per point.
             # First build a new domain           
@@ -74,13 +123,18 @@ class NDVI(OWWidget):
             self.data = None
 
         self.Outputs.data.send(self.data)
+    def reset_limits(self):
+        #Reset the band start and stop values to their default (NDVI values)
+        self.band1_start = 650
+        self.band1_end = 850
+        self.band2_start = 785
+        self.band2_end = 900
+        self.commit() 
 
     def commit(self):
         self.set_data(self.data) #Update the contents.
-        #TODO Need to use fresh original data each time this is done. Currently we're recycling the data object, so it gets downsampled each time by the look of things.
-        
         self.Outputs.data.send(self.data)
-        self.Outputs.originals.send(self.originals)
+
     
     def send_report(self):
         # self.report_plot() includes visualizations in the report

@@ -28,11 +28,8 @@ class UpsampleLO(OWWidget):
         data = Output("Data", Table, default=True)
         originals = Output("Sparse Data", Table)
     
-    upsample_dimension = Setting(480)
-    label = Setting("")
-
-    
-
+    upsample_dimension = Setting("")
+  
     # same class can be initiated for Error and Information messages
     class Warning(OWWidget.Warning):
         warning = Msg("My warning!")
@@ -45,22 +42,23 @@ class UpsampleLO(OWWidget):
             self.controlArea, 
             self, 
             "upsample_dimension",
-            label="Select Output Size", 
-            items=(1920, 960, 640, 480),
+            label="Select Target Output Size", 
+            items=("1920", "960", "640", "480"),
             sendSelectedValue=True,
             callback=self.commit
         )
-        
+    
+
     @Inputs.data
     def set_data(self, data):
-        if data: #This is where the data processing happens?
-            self.data = data
-            print(f"Shape of data is now: {np.shape(self.data)}")
-            self.originals = data # Passing through the unmolested data
+        if data is not None: #This is where the data processing happens?
+
+            self.originals = data # Pass through the unmolested data
+            print(f"Refreshing data: Shape of data is now: {np.shape(self.data)}")
             # extract the sampling_coordinates from the metadata on self.data
             sampling_coordinates = data.metas #since that's the coordinates in the LO data, unless we go and mess that up somewhere else. 
             upsample_dimension = int(self.upsample_dimension)
-            sampling_scale = upsample_dimension/1920
+            sampling_scale = upsample_dimension/1920 #Maximum size is 1920, hard coded.
             print(f"Upsample to {upsample_dimension}, using scale {sampling_scale}")
 
             upsampler = NearestUpSample(
@@ -82,9 +80,7 @@ class UpsampleLO(OWWidget):
             # causes the output to be all skewed.
             x,y = np.meshgrid(np.arange(upsampled_cube.shape[0]),np.arange(upsampled_cube.shape[1]), indexing='ij')
             x = x.reshape(-1)
-            # x = x / np.max(x)
             y = y.reshape(-1)
-            # y = y / np.max(y)
             #Need to get x,y into the right format, which is stuck together and then transposed
             coordinates = np.array([x,y]).T 
             print(f"coordinate array shape {coordinates.shape}")
@@ -93,6 +89,7 @@ class UpsampleLO(OWWidget):
             self.data = Table.from_numpy(domain, reshaped_cube, metas=coordinates)  
             
             print(f"Shape of data is now: {np.shape(self.data)}")
+            
         else:
             self.data = None
 
@@ -100,8 +97,9 @@ class UpsampleLO(OWWidget):
         self.Outputs.originals.send(self.originals)
 
     def commit(self):
-        #May need to refresh the data before we send it onwards. 
-        self.set_data(self.data)
+        self.set_data(self.data) #Update the contents.
+        #TODO Need to use fresh original data each time this is done. Currently we're recycling the data object, so it gets downsampled each time by the look of things.
+        
         self.Outputs.data.send(self.data)
         self.Outputs.originals.send(self.originals)
     

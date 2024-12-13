@@ -27,10 +27,10 @@ class NDVI(OWWidget):
         data = Output("Data", Table, default=True)
     
     #Enable the user to set the bands so it's not just NDVI that's possible.
-    band1_start = Setting("")
-    band1_end = Setting("")
-    band2_start = Setting("")
-    band2_end = Setting("")
+    band1_start = Setting("651")
+    band1_end = Setting("655")
+    band2_start = Setting("675")
+    band2_end = Setting("680")
   
     # same class can be initiated for Error and Information messages
     class Warning(OWWidget.Warning):

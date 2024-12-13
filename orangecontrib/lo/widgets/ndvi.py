@@ -42,7 +42,7 @@ class NDVI(OWWidget):
         self.band1_start = gui.lineEdit(
             self.controlArea, 
             self, 
-            "band1_start", 
+            self.band1_start, 
             label="Band 1 start wavelength", 
             callback=self.commit
         )
@@ -50,7 +50,7 @@ class NDVI(OWWidget):
         self.band1_end = gui.lineEdit(
             self.controlArea, 
             self, 
-            "band1_end", 
+            self.band1_end, 
             label="Band 1 end wavelength", 
             callback=self.commit
         )
@@ -58,7 +58,7 @@ class NDVI(OWWidget):
         self.band2_start = gui.lineEdit(
             self.controlArea, 
             self, 
-            "band2_start", 
+            self.band2_start, 
             label="Band 2 start wavelength", 
             callback=self.commit
         )
@@ -66,7 +66,7 @@ class NDVI(OWWidget):
         self.band2_end = gui.lineEdit(
             self.controlArea, 
             self, 
-            "band2_end", 
+            self.band2_end, 
             label="Band 2 end wavelength", 
             callback=self.commit
         )
@@ -125,10 +125,10 @@ class NDVI(OWWidget):
         self.Outputs.data.send(self.data)
     def reset_limits(self):
         #Reset the band start and stop values to their default (NDVI values)
-        self.band1_start = 650
-        self.band1_end = 850
-        self.band2_start = 785
-        self.band2_end = 900
+        self.band1_start = "650"
+        self.band1_end = "850"
+        self.band2_start = "785"
+        self.band2_end = "900"
         self.commit() 
 
     def commit(self):

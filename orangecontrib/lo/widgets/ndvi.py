@@ -27,7 +27,7 @@ class NDVI(OWWidget):
         data = Output("Data", Table, default=True)
     
     #Enable the user to set the bands so it's not just NDVI that's possible.
-    band1_start = Setting("651")
+    band1_start = Setting("650")
     band1_end = Setting("655")
     band2_start = Setting("675")
     band2_end = Setting("680")
@@ -42,7 +42,7 @@ class NDVI(OWWidget):
         self.band1_start = gui.lineEdit(
             self.controlArea, 
             self, 
-            self.band1_start, 
+            "band1_start", 
             label="Band 1 start wavelength", 
             callback=self.commit
         )
@@ -50,7 +50,7 @@ class NDVI(OWWidget):
         self.band1_end = gui.lineEdit(
             self.controlArea, 
             self, 
-            self.band1_end, 
+            "band1_end", 
             label="Band 1 end wavelength", 
             callback=self.commit
         )
@@ -58,7 +58,7 @@ class NDVI(OWWidget):
         self.band2_start = gui.lineEdit(
             self.controlArea, 
             self, 
-            self.band2_start, 
+            "band2_start", 
             label="Band 2 start wavelength", 
             callback=self.commit
         )
@@ -66,7 +66,7 @@ class NDVI(OWWidget):
         self.band2_end = gui.lineEdit(
             self.controlArea, 
             self, 
-            self.band2_end, 
+            "band2_end", 
             label="Band 2 end wavelength", 
             callback=self.commit
         )
@@ -117,12 +117,13 @@ class NDVI(OWWidget):
 
             #Then transfer data into it
             print(f"Shape of ndvi data is {ndvi_list.shape}")
-
-            self.data = Table.from_numpy(domain, ndvi_list.T, metas=sampling_coordinates)  
+            #TODO: Confirm whether this needs to be 'self.data' or just plain old 'data'. Might be the source of the errors. 
+            data = Table.from_numpy(domain, ndvi_list.T, metas=sampling_coordinates)  
         else:
-            self.data = None
+            data = None
 
-        self.Outputs.data.send(self.data)
+        self.Outputs.data.send(data)
+    
     def reset_limits(self):
         #Reset the band start and stop values to their default (NDVI values)
         self.band1_start = "650"

@@ -101,11 +101,9 @@ class UpsampleLO(OWWidget):
         self.set_data(self.in_data)
 
     def commit(self):
-        #out_data = self.set_data(self.originals) #Update the contents, using the data that were originally passed in to make sure we don't keep making it smaller. 
-        
-        #TODO Need to use fresh original data each time this is done. Currently we're recycling the data object, so it gets downsampled each time by the look of things.
-        
-        self.Outputs.data.send(out_data)
+        #Update the contents, using the data that were originally passed in to make sure we don't keep making it smaller. 
+                
+        self.Outputs.out_data.send(self.out_data)
         self.Outputs.originals.send(self.originals)
     
     def send_report(self):

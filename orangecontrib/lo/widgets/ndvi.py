@@ -20,11 +20,11 @@ class NDVI(OWWidget):
 
     class Inputs:
         # specify the name of the input and the type
-        data = Input("Data", Table)
+        in_data = Input("Data", Table)
 
     class Outputs:
         # if there are two or more outputs, default=True marks the default output
-        data = Output("Data", Table, default=True)
+        out_data = Output("Data", Table, default=True)
     
     #Enable the user to set the bands so it's not just NDVI that's possible.
     band1_start = Setting("650")
@@ -38,7 +38,7 @@ class NDVI(OWWidget):
 
     def __init__(self):
         super().__init__()
-        self.data = None
+        self.in_data = None
         self.band1_start = gui.lineEdit(
             self.controlArea, 
             self, 
@@ -75,7 +75,9 @@ class NDVI(OWWidget):
             self.controlArea, 
             self, 
             label="Reset Band Limits", 
-            callback=self.reset_limits
+            callback=self.reset_limits,
+            default=False,
+            autoDefault=False
         )
 
         self.reset_limits() #Run this to set the values to their defaults when the widget is instantiated.
@@ -91,20 +93,20 @@ class NDVI(OWWidget):
         # )
     
 
-    @Inputs.data
-    def set_data(self, data):
-        if data is not None: 
-
+    @Inputs.in_data
+    def set_data(self, in_data):
+        if in_data is not None: 
+            self.in_data = in_data
             # extract the sampling_coordinates from the metadata on self.data
-            sampling_coordinates = data.metas #since that's the coordinates in the LO data, unless we go and mess that up somewhere else. 
+            sampling_coordinates = in_data.metas #since that's the coordinates in the LO data, unless we go and mess that up somewhere else. 
             band1_start = int(self.band1_start)
             band1_end = int(self.band1_end)
             band2_start = int(self.band2_start)
             band2_end = int(self.band2_end)
 
-            wavelengths = np.array([float(var.name) for var in data.domain.variables])
+            wavelengths = np.array([float(var.name) for var in in_data.domain.variables])
             ndvi_list_a= calculate_NDVI(
-                data.X, 
+                in_data.X, 
                 wavelengths, 
                 (band1_start, band1_end), 
                 (band2_start, band2_end)
@@ -118,11 +120,10 @@ class NDVI(OWWidget):
             #Then transfer data into it
             print(f"Shape of ndvi data is {ndvi_list.shape}")
             #TODO: Confirm whether this needs to be 'self.data' or just plain old 'data'. Might be the source of the errors. 
-            data = Table.from_numpy(domain, ndvi_list.T, metas=sampling_coordinates)  
+            self.out_data = Table.from_numpy(domain, ndvi_list.T, metas=sampling_coordinates)  
         else:
-            data = None
-
-        self.Outputs.data.send(data)
+            self.out_data = None
+        self.Outputs.out_data.send(self.out_data)
     
     def reset_limits(self):
         #Reset the band start and stop values to their default (NDVI values)
@@ -133,8 +134,8 @@ class NDVI(OWWidget):
         self.commit() 
 
     def commit(self):
-        self.set_data(self.data) #Update the contents.
-        self.Outputs.data.send(self.data)
+        self.set_data(self.in_data) #Update the contents.
+        self.Outputs.out_data.send(self.out_data)
 
     
     def send_report(self):

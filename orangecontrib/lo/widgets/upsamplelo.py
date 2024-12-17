@@ -21,14 +21,14 @@ class UpsampleLO(OWWidget):
 
     class Inputs:
         # specify the name of the input and the type
-        data = Input("Data", Table)
+        in_data = Input("Data", Table)
 
     class Outputs:
         # if there are two or more outputs, default=True marks the default output
-        data = Output("Data", Table, default=True)
+        out_data = Output("Data", Table, default=True)
         originals = Output("Sparse Data", Table)
     
-    upsample_dimension = Setting("")
+    upsample_dimension = Setting("640")
   
     # same class can be initiated for Error and Information messages
     class Warning(OWWidget.Warning):
@@ -45,18 +45,20 @@ class UpsampleLO(OWWidget):
             label="Select Target Output Size", 
             items=("1920", "960", "640", "480"),
             sendSelectedValue=True,
-            callback=self.commit
+            callback=self.changeSetting
         )
     
 
-    @Inputs.data
-    def set_data(self, data):
-        if data is not None: #This is where the data processing happens?
+    @Inputs.in_data
+    def set_data(self, in_data):
+        if in_data is not None: #This is where the data processing happens?
 
-            self.originals = data # Pass through the unmolested data
-            print(f"Refreshing data: Shape of data is now: {np.shape(self.data)}")
+            self.originals = in_data # Pass through the unmolested data
+            self.in_data = in_data
+
+            print(f"Refreshing data: Shape of data is now: {np.shape(self.in_data)}")
             # extract the sampling_coordinates from the metadata on self.data
-            sampling_coordinates = data.metas #since that's the coordinates in the LO data, unless we go and mess that up somewhere else. 
+            sampling_coordinates = in_data.metas #since that's the coordinates in the LO data, unless we go and mess that up somewhere else. 
             upsample_dimension = int(self.upsample_dimension)
             sampling_scale = upsample_dimension/1920 #Maximum size is 1920, hard coded.
             print(f"Upsample to {upsample_dimension}, using scale {sampling_scale}")
@@ -67,11 +69,11 @@ class UpsampleLO(OWWidget):
                 origin=(64, 256), 
                 scale = sampling_scale
             )
-            upsampled_cube = upsampler(data.X)
+            upsampled_cube = upsampler(in_data.X)
             print(f"upsampled_cube shape is {upsampled_cube.shape}")
 
             #convert the upsampled cube into a table.             
-            domain = data.domain 
+            domain = in_data.domain 
             
             # Need to reshape the x,y,λ data into (loc, λ) where loc is the sampled coords
             # Do the sample coordinates first. Need to use 'ij' indexing style since
@@ -86,21 +88,22 @@ class UpsampleLO(OWWidget):
             print(f"coordinate array shape {coordinates.shape}")
             #Then do the cube
             reshaped_cube = upsampled_cube.reshape(-1,upsampled_cube.shape[2])
-            self.data = Table.from_numpy(domain, reshaped_cube, metas=coordinates)  
+            self.out_data = Table.from_numpy(domain, reshaped_cube, metas=coordinates)  
             
-            print(f"Shape of data is now: {np.shape(self.data)}")
+            print(f"Shape of data is now: {np.shape(self.out_data)}")
             
         else:
-            self.data = None
+            self.out_data = None
 
-        self.Outputs.data.send(self.data)
+        self.Outputs.out_data.send(self.out_data)
         self.Outputs.originals.send(self.originals)
+    def changeSetting(self):
+        self.set_data(self.in_data)
 
     def commit(self):
-        self.set_data(self.data) #Update the contents.
-        #TODO Need to use fresh original data each time this is done. Currently we're recycling the data object, so it gets downsampled each time by the look of things.
-        
-        self.Outputs.data.send(self.data)
+        #Update the contents, using the data that were originally passed in to make sure we don't keep making it smaller. 
+                
+        self.Outputs.out_data.send(self.out_data)
         self.Outputs.originals.send(self.originals)
     
     def send_report(self):

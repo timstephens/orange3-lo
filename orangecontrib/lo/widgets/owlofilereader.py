@@ -19,7 +19,7 @@ from lo.sdk.api.acquisition.io.open import open as lo_open
 class OWLOFileReader(OWWidget):
     name = "LO File Loader"
     description = "Opens a Living Optics .lo file to allow reading of the spectral data and preview image"
-    icon = "icons/mywidget.svg"
+    icon = "icons/LOFile.svg"
     priority = 55
     keywords = "livingoptics"
     
@@ -42,7 +42,7 @@ class OWLOFileReader(OWWidget):
         super().__init__()
         self.file_index = 0
         self.results = None
-        self.sheet = False #Default to None unless there are >1 frames in the file. Store the current frame id/name
+        self.sheet = "" #Default to None unless there are >1 frames in the file. Store the current frame id/name
         self.sheets = [] #["one", "two", "three"] # List of the frames in the file, if relevant
         self.populate_mainArea()        
         self.populate_comboboxes()
@@ -57,7 +57,7 @@ class OWLOFileReader(OWWidget):
                 for idx, frame in enumerate(f):
                     (metadata, _, _) = frame
                     sheet_list.append(f"{idx} {metadata.timestamp_s}.{metadata.timestamp_us}")               
-                if self.sheet == False:
+                if self.sheet in ["", "(No Frames)"]:
                     self.sheet = sheet_list[0] #Set sheet to the first frame if it's uninitialised.
                 self.sheets = sheet_list
                 return True
@@ -69,8 +69,6 @@ class OWLOFileReader(OWWidget):
         self.has_sheets()
         if self.sheets:
             file_position = self.sheets.index(self.sheet)
-            print(f"{self.sheet}, is at {file_position}")
-            print(f"\n\n SHEETS \n{self.sheets}")
         else:
             file_position = 0
 
@@ -130,6 +128,7 @@ class OWLOFileReader(OWWidget):
         
     def browse_lo_file(self, browse_demos=False):
         """user pressed the '...' button to manually select a file to load"""
+        self.refresh_sheet_list = False # make sure this is only set if we need it to be True. 
         startfile = self.recentFiles[0] if self.recentFiles else '.'
 
         filename, _ = QFileDialog.getOpenFileName(
@@ -141,7 +140,6 @@ class OWLOFileReader(OWWidget):
         if filename in self.recentFiles:
             self.recentFiles.remove(filename)
         self.recentFiles.insert(0, filename)
-        self.refresh_sheet_list = True
         self.populate_comboboxes()
         self.file_index = 0
         self.select_lo_file()
@@ -149,6 +147,7 @@ class OWLOFileReader(OWWidget):
     
     def select_lo_file(self):
         """user selected a file from the combo box"""
+        self.refresh_sheet_list = False # make sure this is only set if we need it to be True. 
         if self.file_index > len(self.recentFiles) - 1:
             if not self.browse_lo_file(True):
                 return  # Cancelled
@@ -160,12 +159,11 @@ class OWLOFileReader(OWWidget):
             self.lofile = self.recentFiles[0]
             self.reload()
         self.refresh_sheet_list = True
+
     def select_sheet(self):
         #elf.sheet = sheet
         print(f"Frame {self.sheet} is now selected")
         self.reload()
-
-
 
     def populate_comboboxes(self):
         self.filecombo.clear()
@@ -173,10 +171,10 @@ class OWLOFileReader(OWWidget):
             self.filecombo.addItem(path.basename(file))
         self.filecombo.addItem("Browse Living Optics Files...")
         self.filecombo.updateGeometry()
-        #TODO: Need to only call this function to rebuild the list if it's a new lofile that's loaded. If it's the same one, then this shouldn't be touched since it'll reset the selection in the Frames combo box. 
-        # Some re-architecture is needed by the look of things. 
+        #Need to only call this function to rebuild the list if it's a new lofile that's loaded. If it's the same one, then this shouldn't be touched since it'll reset the selection in the Frames combo box. 
+        print(f"populate_comboboxes, refresh_sheet_list={self.refresh_sheet_list}")
         if self.refresh_sheet_list:
-            self.sheetcombo.clear() #It's this guy who's causing the problems. Only call  
+            self.sheetcombo.clear()
             for s in self.sheets or ("(No Frames)",):
                 self.sheetcombo.addItem(s)
             self.sheetcombo.updateGeometry()

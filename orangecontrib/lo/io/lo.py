@@ -61,7 +61,7 @@ class LOReader(FileFormat, DataTableMixin):
         my_domain = []
         for w in metadata.wavelengths:
             my_domain.append(ContinuousVariable(f"{w}"))
-
+        
         domain = Domain(my_domain, metas=[ContinuousVariable("map_x"), ContinuousVariable("map_y")])
         data = Table.from_numpy(domain, spectra, metas=metadata.sampling_coordinates)
         return data

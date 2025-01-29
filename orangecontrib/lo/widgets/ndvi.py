@@ -128,7 +128,7 @@ class NDVI(OWWidget):
     def reset_limits(self):
         #Reset the band start and stop values to their default (NDVI values)
         self.band1_start = "650"
-        self.band1_end = "850"
+        self.band1_end = "680"
         self.band2_start = "785"
         self.band2_end = "900"
         self.commit() 
